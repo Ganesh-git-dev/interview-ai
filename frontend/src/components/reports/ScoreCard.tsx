@@ -19,14 +19,16 @@ export default function ScoreCard({ overallScore, recommendation }: ScoreCardPro
   };
 
   const getMessage = () => {
-    switch (recommendation) {
-      case 'Hire':
-        return 'Strong candidate! You demonstrated excellent skills.';
-      case 'Consider':
-        return 'Good potential with some areas for improvement.';
-      default:
-        return 'Keep practicing! Focus on the recommended labs below.';
+    if (recommendation === 'Hire') {
+      if (overallScore >= 90) return 'Outstanding performance! You are exceptionally well-prepared for this role.';
+      if (overallScore >= 80) return 'Excellent work! You showed strong technical depth and clear communication.';
+      return 'Strong candidate! You demonstrated solid skills across the board.';
     }
+    if (recommendation === 'Consider') {
+      if (overallScore >= 60) return 'Good foundation with some areas to sharpen before the next interview.';
+      return 'Decent showing — focus on the weak areas flagged below to level up.';
+    }
+    return 'Keep practicing! Review the feedback and try the recommended labs below.';
   };
 
   return (
