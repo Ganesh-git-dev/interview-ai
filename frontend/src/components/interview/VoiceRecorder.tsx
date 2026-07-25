@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Mic, MicOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Loader2, Send } from 'lucide-react';
 import LiveCaptions from './LiveCaptions';
 
 interface VoiceRecorderProps {
@@ -9,6 +9,7 @@ interface VoiceRecorderProps {
   isAISpeaking: boolean;
   isEvaluating: boolean;
   onToggleRecording: () => void;
+  onSubmit: () => void;
 }
 
 export default function VoiceRecorder({
@@ -18,7 +19,10 @@ export default function VoiceRecorder({
   isAISpeaking,
   isEvaluating,
   onToggleRecording,
+  onSubmit,
 }: VoiceRecorderProps) {
+  const hasText = transcription.trim().length > 0;
+
   return (
     <div className="space-y-3">
       {/* Live Captions */}
@@ -26,8 +30,8 @@ export default function VoiceRecorder({
         <LiveCaptions finalTranscript={transcription} interimTranscript={interimTranscript} />
       )}
 
-      {/* Mic Toggle */}
-      <div className="flex items-center justify-center">
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-4">
         {isEvaluating ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -56,27 +60,42 @@ export default function VoiceRecorder({
             AI is speaking...
           </motion.div>
         ) : (
-          <button
-            onClick={onToggleRecording}
-            className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-              isRecording
-                ? 'bg-red-600 shadow-lg shadow-red-600/30'
-                : 'bg-gray-700 hover:bg-gray-600'
-            }`}
-          >
-            {isRecording ? (
-              <MicOff className="w-6 h-6 text-white" />
-            ) : (
-              <Mic className="w-6 h-6 text-white" />
+          <>
+            {/* Mic Toggle */}
+            <button
+              onClick={onToggleRecording}
+              className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                isRecording
+                  ? 'bg-red-600 shadow-lg shadow-red-600/30'
+                  : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              {isRecording ? (
+                <MicOff className="w-5 h-5 text-white" />
+              ) : (
+                <Mic className="w-5 h-5 text-white" />
+              )}
+              {isRecording && (
+                <motion.span
+                  className="absolute inset-0 rounded-full border-2 border-red-500"
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              )}
+            </button>
+
+            {/* Submit Button */}
+            {hasText && !isRecording && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={onSubmit}
+                className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all shadow-lg shadow-blue-600/30"
+              >
+                <Send className="w-5 h-5 text-white" />
+              </motion.button>
             )}
-            {isRecording && (
-              <motion.span
-                className="absolute inset-0 rounded-full border-2 border-red-500"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-            )}
-          </button>
+          </>
         )}
       </div>
     </div>

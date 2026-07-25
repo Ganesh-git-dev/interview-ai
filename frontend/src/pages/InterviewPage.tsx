@@ -35,14 +35,7 @@ export default function InterviewPage() {
     resetTranscription,
     isSupported,
     error: speechError,
-  } = useSpeechRecognition({
-    onEnd: () => {
-      // Auto-submit when speech recognition stops (silence or mic toggle)
-      if (phaseRef.current === 'user-speaking' && transcription.trim()) {
-        submitAnswer();
-      }
-    },
-  });
+  } = useSpeechRecognition();
 
   const { isSpeaking: isAISpeaking, speak, stop: stopAI } = useAIVoice();
 
@@ -123,9 +116,7 @@ export default function InterviewPage() {
 
   const handleToggleMic = () => {
     if (isRecording) {
-      // Clicking mic while recording → stop and submit
       stopRecording();
-      // onEnd callback will handle submission
     } else if (phase === 'user-speaking') {
       startRecording();
     }
@@ -225,6 +216,7 @@ export default function InterviewPage() {
                   isAISpeaking={isAISpeaking && phase === 'ai-speaking'}
                   isEvaluating={isSubmitting}
                   onToggleRecording={handleToggleMic}
+                  onSubmit={submitAnswer}
                 />
 
                 {speechError && (
