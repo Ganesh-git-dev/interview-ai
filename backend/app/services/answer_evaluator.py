@@ -1,12 +1,23 @@
-from app.services.gemini_client import pro_client, fast_client
+from app.services.gemini_client import pro_client, fast_client, _has_api_key
 from app.prompts.technical_evaluator import TECHNICAL_EVALUATOR_SYSTEM, TECHNICAL_EVALUATOR_PROMPT
 from app.prompts.communication_coach import COMMUNICATION_COACH_SYSTEM, COMMUNICATION_COACH_PROMPT
 from app.prompts.star_coach import STAR_COACH_SYSTEM, STAR_COACH_PROMPT
 
 
-class AnswerEvaluatorService:
-    """Service for evaluating interview answers using multiple AI agents."""
+def _mock_evaluate(question_type: str = "technical") -> dict:
+    return {
+        "technical_score": 75.0,
+        "completeness_score": 70.0,
+        "communication_score": 80.0,
+        "overall_score": 75.0,
+        "strengths": ["Good technical knowledge demonstrated", "Clear communication", "Mentioned relevant tools"],
+        "gaps": ["Could provide more specific examples", "Consider discussing alternative approaches"],
+        "model_answer_concepts": ["SIEM alert triage process", "Log source correlation", "Escalation procedures"],
+        "feedback_text": "The candidate demonstrated solid technical understanding. The answer was well-structured and covered key concepts. To improve, consider adding more specific real-world examples and discussing edge cases."
+    }
 
+
+class AnswerEvaluatorService:
     async def evaluate(
         self,
         question_text: str,
@@ -15,10 +26,11 @@ class AnswerEvaluatorService:
         transcription: str,
         jd_parsed: dict
     ) -> dict:
-        """Evaluate an answer using technical and communication evaluators."""
+        if not _has_api_key:
+            return _mock_evaluate(question_type)
+
         required_skills = ", ".join(jd_parsed.get("required_skills", []))
 
-        # Technical evaluation
         tech_prompt = TECHNICAL_EVALUATOR_PROMPT.format(
             question_text=question_text,
             question_type=question_type,
@@ -32,7 +44,6 @@ class AnswerEvaluatorService:
             system_instruction=TECHNICAL_EVALUATOR_SYSTEM
         )
 
-        # Communication evaluation
         comm_prompt = COMMUNICATION_COACH_PROMPT.format(
             question_text=question_text,
             transcription=transcription
@@ -43,7 +54,6 @@ class AnswerEvaluatorService:
             system_instruction=COMMUNICATION_COACH_SYSTEM
         )
 
-        # STAR evaluation for behavioural questions
         star_result = None
         if question_type == "behavioural":
             star_prompt = STAR_COACH_PROMPT.format(
@@ -55,12 +65,10 @@ class AnswerEvaluatorService:
                 system_instruction=STAR_COACH_SYSTEM
             )
 
-        # Calculate overall scores
         technical_score = tech_result.get("overall_score", 70)
         completeness_score = tech_result.get("completeness_score", 70)
         communication_score = comm_result.get("communication_score", 70)
 
-        # Weighted overall score
         if question_type == "behavioural" and star_result:
             overall_score = (
                 technical_score * 0.3 +
@@ -75,7 +83,6 @@ class AnswerEvaluatorService:
                 communication_score * 0.3
             )
 
-        # Combine feedback
         strengths = tech_result.get("strengths", []) + comm_result.get("communication_strengths", [])
         gaps = tech_result.get("gaps", []) + comm_result.get("communication_improvements", [])
 

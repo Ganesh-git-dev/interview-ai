@@ -11,6 +11,13 @@ from app.models.user import User
 
 settings = get_settings()
 
+# Fix bcrypt compatibility with passlib
+import bcrypt as _bcrypt
+if not hasattr(_bcrypt, '__about__'):
+    import types
+    _bcrypt.__about__ = types.ModuleType('bcrypt.__about__')
+    _bcrypt.__about__.__version__ = getattr(_bcrypt, '__version__', '4.1.0')
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 

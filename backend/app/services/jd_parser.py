@@ -1,15 +1,32 @@
-from app.services.gemini_client import fast_client
+from app.services.gemini_client import fast_client, _has_api_key
 from app.prompts.jd_analyzer import JD_ANALYZER_SYSTEM, JD_ANALYZER_PROMPT
 from app.schemas.jd import JDParsedResponse
 
 
+def _mock_parse(jd_text: str) -> JDParsedResponse:
+    return JDParsedResponse(
+        role_title="SOC Analyst",
+        seniority_level="Mid",
+        required_skills=["Splunk", "Log Analysis", "Incident Response", "MITRE ATT&CK", "SIEM"],
+        preferred_certifications=["CEH", "CompTIA Security+"],
+        domain_focus=["SOC/SIEM", "Threat Detection"],
+        responsibilities=[
+            "Monitor SIEM dashboards for security events",
+            "Investigate and triage security alerts",
+            "Perform log analysis and threat hunting",
+            "Document incident response procedures",
+            "Collaborate with threat intelligence teams"
+        ],
+        experience_years="2-3 years"
+    )
+
+
 class JDParserService:
-    """Service for parsing job descriptions using Gemini AI."""
-
     async def parse(self, jd_text: str) -> JDParsedResponse:
-        """Parse a job description and extract structured data."""
-        prompt = JD_ANALYZER_PROMPT.format(jd_text=jd_text)
+        if not _has_api_key:
+            return _mock_parse(jd_text)
 
+        prompt = JD_ANALYZER_PROMPT.format(jd_text=jd_text)
         result = await fast_client.generate_json(
             prompt=prompt,
             system_instruction=JD_ANALYZER_SYSTEM

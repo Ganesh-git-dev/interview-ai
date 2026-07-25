@@ -39,6 +39,19 @@ async def create_session(
     return session
 
 
+@router.get("/list", response_model=SessionListResponse)
+def list_sessions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List all sessions for current user."""
+    sessions = db.query(InterviewSession).filter(
+        InterviewSession.user_id == current_user.id
+    ).order_by(InterviewSession.created_at.desc()).all()
+
+    return SessionListResponse(sessions=sessions, total=len(sessions))
+
+
 @router.get("/{session_id}", response_model=SessionResponse)
 def get_session(
     session_id: int,
@@ -55,19 +68,6 @@ def get_session(
         raise HTTPException(status_code=404, detail="Session not found")
 
     return session
-
-
-@router.get("/list", response_model=SessionListResponse)
-def list_sessions(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """List all sessions for current user."""
-    sessions = db.query(InterviewSession).filter(
-        InterviewSession.user_id == current_user.id
-    ).order_by(InterviewSession.created_at.desc()).all()
-
-    return SessionListResponse(sessions=sessions, total=len(sessions))
 
 
 @router.post("/{session_id}/start", response_model=QuestionListResponse)

@@ -83,7 +83,7 @@ def get_report(
         gaps=list(set(all_gaps)),
         domain_scores=analytics.domain_scores if analytics else {},
         role_readiness=analytics.role_readiness if analytics else {},
-        recommendations=[RecommendationResponse.from_orm(r) for r in recommendations],
+        recommendations=[RecommendationResponse.model_validate(r) for r in recommendations],
         answers=answers_data
     )
 
