@@ -30,7 +30,7 @@ async def create_session(
     session = InterviewSession(
         user_id=current_user.id,
         jd_text=request.jd_text,
-        jd_parsed=jd_parsed.dict(),
+        jd_parsed=jd_parsed.model_dump(),
         status="created"
     )
     db.add(session)
@@ -116,7 +116,7 @@ async def start_interview(
     ).order_by(Question.order_num).all()
 
     return QuestionListResponse(
-        questions=[QuestionResponse.from_orm(q) for q in db_questions],
+        questions=[QuestionResponse.model_validate(q) for q in db_questions],
         total=len(db_questions),
         current_index=0
     )
@@ -142,7 +142,7 @@ def get_questions(
     ).order_by(Question.order_num).all()
 
     return QuestionListResponse(
-        questions=[QuestionResponse.from_orm(q) for q in questions],
+        questions=[QuestionResponse.model_validate(q) for q in questions],
         total=len(questions),
         current_index=0
     )
@@ -172,7 +172,7 @@ def get_current_question(
     for q in questions:
         answer = db.query(Answer).filter(Answer.question_id == q.id).first()
         if not answer:
-            return QuestionResponse.from_orm(q)
+            return QuestionResponse.model_validate(q)
 
     # All questions answered
     return {"message": "All questions answered", "completed": True}

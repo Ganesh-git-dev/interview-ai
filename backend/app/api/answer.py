@@ -66,7 +66,7 @@ async def submit_answer(
     db.commit()
     db.refresh(answer)
 
-    return AnswerFeedback.from_orm(answer)
+    return AnswerFeedback.model_validate(answer)
 
 
 @router.get("/{answer_id}/feedback", response_model=AnswerFeedback)
@@ -89,4 +89,4 @@ def get_feedback(
     if not session:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    return AnswerFeedback.from_orm(answer)
+    return AnswerFeedback.model_validate(answer)

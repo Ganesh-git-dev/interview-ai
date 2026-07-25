@@ -11,6 +11,7 @@ from app.models.answer import Answer
 from app.models.analytics import Analytics
 from app.models.recommendation import Recommendation
 from app.schemas.analytics import ReportResponse, RecommendationResponse
+from app.schemas.answer import AnswerFeedback
 from app.services.report_generator import ReportGeneratorService
 from app.services.analytics_engine import AnalyticsEngineService
 
@@ -34,7 +35,7 @@ def get_report(
 
     # Get answers with feedback
     answers = db.query(Answer).filter(Answer.session_id == session_id).all()
-    answers_data = [AnswerFeedback.from_orm(a) for a in answers]
+    answers_data = [AnswerFeedback.model_validate(a) for a in answers]
 
     # Calculate averages
     if answers:
@@ -138,4 +139,4 @@ def get_recommendations(
         Recommendation.session_id == session_id
     ).all()
 
-    return [RecommendationResponse.from_orm(r) for r in recommendations]
+    return [RecommendationResponse.model_validate(r) for r in recommendations]

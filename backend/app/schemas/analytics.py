@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from app.schemas.answer import AnswerFeedback
 
 
 class AnalyticsResponse(BaseModel):

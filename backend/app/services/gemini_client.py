@@ -3,8 +3,14 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Validate API key
+if not settings.GEMINI_API_KEY or settings.GEMINI_API_KEY == "your_gemini_api_key_here":
+    import warnings
+    warnings.warn("GEMINI_API_KEY is not set. AI features will fail.")
+
 # Configure Gemini
-genai.configure(api_key=settings.GEMINI_API_KEY)
+if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "your_gemini_api_key_here":
+    genai.configure(api_key=settings.GEMINI_API_KEY)
 
 
 class GeminiClient:

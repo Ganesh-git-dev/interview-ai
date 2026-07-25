@@ -4,6 +4,8 @@ from app.models.analytics import Analytics
 from app.models.recommendation import Recommendation
 from app.models.answer import Answer
 
+HESITATION_WORDS = ["um", "uh", "like", "you know", "basically", "actually"]
+
 
 class AnalyticsEngineService:
     """Service for generating analytics and insights from interview sessions."""
@@ -27,7 +29,8 @@ class AnalyticsEngineService:
         domain_scores = self.calculate_domain_scores(answers)
 
         # Calculate role readiness
-        role_readiness = self.calculate_role_readiness(answers, session.jd_parsed if session else {})
+        readiness_list = self.calculate_role_readiness(answers, session.jd_parsed if session else {})
+        readiness_dict = {item["role"]: item["percentage"] for item in readiness_list}
 
         # Create analytics record
         analytics = Analytics(
@@ -37,7 +40,7 @@ class AnalyticsEngineService:
             avg_response_length=confidence_data.get("avg_response_length", 0),
             keyword_coverage={item["skill"]: item["covered"] for item in keyword_data},
             domain_scores=domain_scores,
-            role_readiness={item["role"]: item["percentage"] for item in role_readiness}
+            role_readiness=readiness_dict
         )
 
         db.add(analytics)
@@ -58,7 +61,7 @@ class AnalyticsEngineService:
         # Analyze response patterns
         total_length = 0
         filler_count = 0
-        hesitation_words = ["um", "uh", "like", "you know", "basically", "actually"]
+        hesitation_words = HESITATION_WORDS
 
         for answer in answers:
             if answer.transcription:
