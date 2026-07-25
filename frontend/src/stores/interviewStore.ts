@@ -36,7 +36,7 @@ interface InterviewState {
   setTranscription: (text: string) => void;
 }
 
-export const useInterviewStore = create<InterviewState>()((set, get) => ({
+export const useInterviewStore = create<InterviewState>()((set) => ({
   sessionId: null,
   questions: [],
   currentQuestionIndex: 0,
