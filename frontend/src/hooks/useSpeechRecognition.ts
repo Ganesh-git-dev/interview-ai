@@ -3,6 +3,7 @@ import { useState, useRef, useCallback } from 'react';
 interface UseSpeechRecognitionReturn {
   isRecording: boolean;
   transcription: string;
+  interimTranscript: string;
   startRecording: () => void;
   stopRecording: () => void;
   resetTranscription: () => void;
@@ -10,11 +11,18 @@ interface UseSpeechRecognitionReturn {
   error: string | null;
 }
 
-export function useSpeechRecognition(): UseSpeechRecognitionReturn {
+interface UseSpeechRecognitionOptions {
+  onEnd?: () => void;
+}
+
+export function useSpeechRecognition(options?: UseSpeechRecognitionOptions): UseSpeechRecognitionReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const onEndRef = useRef(options?.onEnd);
+  onEndRef.current = options?.onEnd;
 
   const isSupported =
     typeof window !== 'undefined' &&
@@ -27,6 +35,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     }
 
     setError(null);
+    setInterimTranscript('');
 
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -37,16 +46,18 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
 
     recognitionRef.current.onresult = (event: any) => {
       let finalTranscript = '';
-      let interimTranscript = '';
+      let interim = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
           finalTranscript += result[0].transcript;
         } else {
-          interimTranscript += result[0].transcript;
+          interim += result[0].transcript;
         }
       }
+
+      setInterimTranscript(interim);
 
       if (finalTranscript) {
         setTranscription((prev) => {
@@ -69,7 +80,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     };
 
     recognitionRef.current.onend = () => {
+      setInterimTranscript('');
       setIsRecording(false);
+      onEndRef.current?.();
     };
 
     try {
@@ -87,16 +100,19 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       recognitionRef.current = null;
     }
     setIsRecording(false);
+    setInterimTranscript('');
   }, []);
 
   const resetTranscription = useCallback(() => {
     setTranscription('');
+    setInterimTranscript('');
     setError(null);
   }, []);
 
   return {
     isRecording,
     transcription,
+    interimTranscript,
     startRecording,
     stopRecording,
     resetTranscription,

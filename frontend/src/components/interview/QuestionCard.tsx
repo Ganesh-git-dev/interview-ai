@@ -7,9 +7,10 @@ interface QuestionCardProps {
   question: Question;
   questionNumber: number;
   totalQuestions: number;
+  isAISpeaking?: boolean;
 }
 
-export default function QuestionCard({ question, questionNumber, totalQuestions }: QuestionCardProps) {
+export default function QuestionCard({ question, questionNumber, totalQuestions, isAISpeaking }: QuestionCardProps) {
   return (
     <motion.div
       key={question.id}
@@ -32,6 +33,25 @@ export default function QuestionCard({ question, questionNumber, totalQuestions 
       <h2 className="text-xl font-semibold mb-6 leading-relaxed">
         {question.question_text}
       </h2>
+
+      {isAISpeaking && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-purple-400 text-sm"
+        >
+          <motion.div
+            className="flex gap-0.5"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.2, repeat: Infinity }}
+          >
+            <span className="w-1 h-3 bg-purple-400 rounded-full" />
+            <span className="w-1 h-4 bg-purple-400 rounded-full" />
+            <span className="w-1 h-2 bg-purple-400 rounded-full" />
+          </motion.div>
+          AI is reading this question...
+        </motion.div>
+      )}
     </motion.div>
   );
 }

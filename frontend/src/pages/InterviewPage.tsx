@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
@@ -7,8 +7,11 @@ import VoiceRecorder from '../components/interview/VoiceRecorder';
 import FeedbackCard from '../components/interview/FeedbackCard';
 import ProgressIndicator from '../components/interview/ProgressIndicator';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useAIVoice } from '../hooks/useAIVoice';
 import Spinner from '../components/ui/Spinner';
 import type { Question } from '../types';
+
+type Phase = 'ai-speaking' | 'user-speaking' | 'evaluating' | 'ai-feedback' | 'complete';
 
 export default function InterviewPage() {
   const { sessionId } = useParams();
@@ -20,31 +23,32 @@ export default function InterviewPage() {
   const [loading, setLoading] = useState(true);
   const [timer, setTimer] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
-
-  const [localTranscription, setLocalTranscription] = useState('');
+  const [phase, setPhase] = useState<Phase>('ai-speaking');
+  const phaseRef = useRef<Phase>('ai-speaking');
 
   const {
     isRecording,
-    transcription: speechTranscription,
+    transcription,
+    interimTranscript,
     startRecording,
     stopRecording,
     resetTranscription,
     isSupported,
     error: speechError,
-  } = useSpeechRecognition();
+  } = useSpeechRecognition({
+    onEnd: () => {
+      if (phaseRef.current === 'user-speaking') {
+        // Speech recognition auto-stopped (e.g. silence)
+        handleDoneSpeaking();
+      }
+    },
+  });
 
-  // Sync speech transcription to local state
-  useEffect(() => {
-    if (speechTranscription) {
-      setLocalTranscription((prev) => {
-        const combined = prev + ' ' + speechTranscription;
-        return combined.trim();
-      });
-    }
-  }, [speechTranscription]);
+  const { isSpeaking: isAISpeaking, speak, stop: stopAI } = useAIVoice();
 
   useEffect(() => {
     loadQuestions();
+    return () => stopAI();
   }, [sessionId]);
 
   useEffect(() => {
@@ -67,40 +71,68 @@ export default function InterviewPage() {
     }
   };
 
-  const handleToggleRecording = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+  const speakQuestion = async (question: Question) => {
+    setPhase('ai-speaking');
+    phaseRef.current = 'ai-speaking';
+    await speak(question.question_text);
+    startRecording();
+    setPhase('user-speaking');
+    phaseRef.current = 'user-speaking';
   };
 
-  const handleSubmit = async () => {
-    if (!localTranscription.trim() || !questions[currentIndex]) return;
+  // Auto-speak first question when questions load
+  const spokeFirstRef = useRef(false);
+  useEffect(() => {
+    if (questions.length > 0 && !spokeFirstRef.current && !loading) {
+      spokeFirstRef.current = true;
+      speakQuestion(questions[0]);
+    }
+  }, [questions, loading]);
 
+  const handleDoneSpeaking = async () => {
+    if (phaseRef.current !== 'user-speaking') return;
+    stopRecording();
+
+    if (!transcription.trim()) return;
+
+    setPhase('evaluating');
+    phaseRef.current = 'evaluating';
     setIsSubmitting(true);
+
     try {
       const response = await api.post('/api/answer/submit', {
         question_id: questions[currentIndex].id,
-        transcription: localTranscription.trim(),
+        transcription: transcription.trim(),
       });
       setFeedback(response.data);
       setTimerActive(false);
+      setPhase('ai-feedback');
+      phaseRef.current = 'ai-feedback';
+
+      // Speak brief feedback
+      const score = response.data.overall_score;
+      const summary = `You scored ${score} out of 100.`;
+      await speak(summary);
     } catch (error) {
       console.error('Failed to submit answer');
+      setPhase('user-speaking');
+      phaseRef.current = 'user-speaking';
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setFeedback(null);
     resetTranscription();
-    setLocalTranscription('');
+
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
       setTimer(0);
       setTimerActive(true);
+      // Speak next question
+      await speakQuestion(questions[nextIndex]);
     } else {
       navigate(`/results/${sessionId}`);
     }
@@ -150,7 +182,7 @@ export default function InterviewPage() {
               {currentIndex + 1} / {questions.length}
             </span>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => { stopAI(); navigate('/dashboard'); }}
               className="text-gray-400 hover:text-white text-sm transition"
             >
               Exit
@@ -174,14 +206,28 @@ export default function InterviewPage() {
                 question={currentQuestion}
                 questionNumber={currentIndex + 1}
                 totalQuestions={questions.length}
+                isAISpeaking={isAISpeaking && phase === 'ai-speaking'}
               />
 
               <div className="mt-6">
                 <VoiceRecorder
                   isRecording={isRecording}
-                  transcription={localTranscription}
-                  onToggleRecording={handleToggleRecording}
-                  onTranscriptionChange={setLocalTranscription}
+                  transcription={transcription}
+                  interimTranscript={interimTranscript}
+                  isAISpeaking={isAISpeaking && phase === 'ai-speaking'}
+                  isEvaluating={isSubmitting}
+                  onToggleRecording={() => {
+                    if (isRecording) {
+                      stopRecording();
+                      setPhase('user-speaking');
+                      phaseRef.current = 'user-speaking';
+                    } else {
+                      startRecording();
+                      setPhase('user-speaking');
+                      phaseRef.current = 'user-speaking';
+                    }
+                  }}
+                  onDone={handleDoneSpeaking}
                 />
 
                 {speechError && (
@@ -193,24 +239,6 @@ export default function InterviewPage() {
                     Speech recognition not available in this browser. Type your answer instead.
                   </p>
                 )}
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!localTranscription.trim() || isSubmitting}
-                  className="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Evaluating...
-                    </>
-                  ) : (
-                    'Submit Answer'
-                  )}
-                </button>
               </div>
             </motion.div>
           ) : (
