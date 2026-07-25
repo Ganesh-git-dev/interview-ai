@@ -34,10 +34,30 @@ async def submit_answer(
     if not session:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Check if answer already exists
+    # Check if answer already exists — update it instead of rejecting
     existing_answer = db.query(Answer).filter(Answer.question_id == request.question_id).first()
     if existing_answer:
-        raise HTTPException(status_code=400, detail="Answer already submitted")
+        # Re-evaluate with new transcription
+        evaluator = AnswerEvaluatorService()
+        evaluation = await evaluator.evaluate(
+            question_text=question.question_text,
+            question_type=question.question_type,
+            domain=question.domain,
+            transcription=request.transcription,
+            jd_parsed=session.jd_parsed
+        )
+        existing_answer.transcription = request.transcription
+        existing_answer.technical_score = evaluation["technical_score"]
+        existing_answer.completeness_score = evaluation["completeness_score"]
+        existing_answer.communication_score = evaluation["communication_score"]
+        existing_answer.overall_score = evaluation["overall_score"]
+        existing_answer.strengths = evaluation["strengths"]
+        existing_answer.gaps = evaluation["gaps"]
+        existing_answer.model_answer_concepts = evaluation["model_answer_concepts"]
+        existing_answer.feedback_text = evaluation["feedback_text"]
+        db.commit()
+        db.refresh(existing_answer)
+        return AnswerFeedback.model_validate(existing_answer)
 
     # Evaluate answer with AI
     evaluator = AnswerEvaluatorService()

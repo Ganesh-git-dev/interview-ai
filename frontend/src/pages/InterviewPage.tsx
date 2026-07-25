@@ -25,6 +25,7 @@ export default function InterviewPage() {
   const [timerActive, setTimerActive] = useState(false);
   const [phase, setPhase] = useState<Phase>('ai-speaking');
   const phaseRef = useRef<Phase>('ai-speaking');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     isRecording,
@@ -91,6 +92,7 @@ export default function InterviewPage() {
     setPhase('evaluating');
     phaseRef.current = 'evaluating';
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const response = await api.post('/api/answer/submit', {
@@ -105,8 +107,10 @@ export default function InterviewPage() {
       const score = response.data.overall_score;
       const summary = `You scored ${score} out of 100.`;
       await speak(summary);
-    } catch (error) {
-      console.error('Failed to submit answer');
+    } catch (error: any) {
+      console.error('Failed to submit answer', error);
+      const msg = error?.response?.data?.detail || 'Failed to submit answer. Please try again.';
+      setSubmitError(msg);
       setPhase('user-speaking');
       phaseRef.current = 'user-speaking';
     } finally {
@@ -221,6 +225,10 @@ export default function InterviewPage() {
 
                 {speechError && (
                   <div className="mt-2 text-red-400 text-sm">{speechError}</div>
+                )}
+
+                {submitError && (
+                  <div className="mt-2 text-red-400 text-sm">{submitError}</div>
                 )}
 
                 {!isSupported && (
