@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -65,6 +66,14 @@ async def submit_answer(
     db.add(answer)
     db.commit()
     db.refresh(answer)
+
+    # Check if all questions are answered and mark session as completed
+    total_questions = db.query(Question).filter(Question.session_id == session.id).count()
+    answered_count = db.query(Answer).filter(Answer.session_id == session.id).count()
+    if answered_count >= total_questions and session.status != "completed":
+        session.status = "completed"
+        session.completed_at = datetime.now(timezone.utc)
+        db.commit()
 
     return AnswerFeedback.model_validate(answer)
 

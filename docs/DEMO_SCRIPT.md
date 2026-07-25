@@ -83,12 +83,12 @@
 
 ## 4. Architecture Overview (1 min)
 
-> "Behind the scenes, we have a React frontend, a FastAPI Python backend, an SQLite database, and the Google Gemini API for AI. The frontend communicates via REST APIs. The AI layer uses two models: gemini-2.5-flash for fast evaluations and gemini-2.5-pro for deep technical analysis."
+> "Behind the scenes, we have a React frontend, a FastAPI Python backend, an SQLite database, and the Groq API for AI. The frontend communicates via REST APIs. The AI layer uses LLaMA 3.3 70B Versatile models via the Groq API for fast, high-quality evaluations."
 
 **Refer to ARCHITECTURE.md for the diagram.**
 
 ```
-Frontend (React/Vite) → Backend (FastAPI) → Gemini API
+Frontend (React/Vite) → Backend (FastAPI) → Groq API
                     ↕                    ↕
                Browser Speech        SQLite DB
 ```
@@ -123,7 +123,7 @@ Frontend (React/Vite) → Backend (FastAPI) → Gemini API
 
 ### Anticipated Questions
 
-**Q: What if the Gemini API fails?**
+**Q: What if the Groq API fails?**
 A: We have error handling at every layer. The app gracefully shows error messages. For the demo, we have a recorded backup.
 
 **Q: How accurate is the voice recognition?**
@@ -142,7 +142,7 @@ A: Yes, SQLite stores all sessions, questions, answers, and analytics. Users can
 
 1. **If AI fails:** Have screenshots ready of the full flow
 2. **If voice fails:** Use text input (always works)
-3. **If network fails:** Local dev server runs fully offline except Gemini API
+3. **If network fails:** Local dev server runs fully offline except Groq API
 4. **Recorded demo:** Screen recording saved as backup
 
 ---

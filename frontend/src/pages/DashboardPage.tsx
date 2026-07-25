@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
   const loadSessions = async () => {
     try {
-      const response = await api.get('/api/sessions');
+      const response = await api.get('/api/session/list');
       setSessions(response.data || []);
     } catch {
       // Sessions endpoint may not exist yet

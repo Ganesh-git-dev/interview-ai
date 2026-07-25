@@ -43,7 +43,7 @@ InterviewAI Pro is a voice-enabled AI mock interview agent that helps cybersecur
 |-------|------------|
 | **Frontend** | React 18, Vite 5, Tailwind CSS 3, Framer Motion, Recharts, Zustand |
 | **Backend** | Python 3.11+, FastAPI, SQLAlchemy, Pydantic |
-| **AI** | Google Gemini API (gemini-2.5-flash + gemini-2.5-pro) |
+| **AI** | Groq API (LLaMA 3.3 70B Versatile via llama-3.3-70b-versatile) |
 | **Voice** | Web Speech API (browser-based, no external services) |
 | **PDF** | ReportLab |
 | **Database** | SQLite (development), PostgreSQL-ready |
@@ -58,7 +58,7 @@ InterviewAI Pro is a voice-enabled AI mock interview agent that helps cybersecur
 - Git
 - Docker & Docker Compose (recommended)
 - OR Node.js 18+ & Python 3.11+
-- Google Gemini API key ([get one free](https://ai.google.dev/))
+- Groq API key ([get one free](https://console.groq.com/))
 
 ### With Docker (Recommended)
 
@@ -69,7 +69,7 @@ cd interview-ai
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Edit .env and add your GROQ_API_KEY
 
 # Build and run
 docker-compose up --build
@@ -90,7 +90,7 @@ venv\Scripts\activate
 # source venv/bin/activate
 
 pip install -r requirements.txt
-cp ../.env.example .env  # Add your GEMINI_API_KEY
+cp ../.env.example .env  # Add your GROQ_API_KEY
 uvicorn main:app --reload
 ```
 
@@ -178,7 +178,7 @@ BASE_URL=http://localhost:8000 bash scripts/test-e2e.sh
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `GEMINI_API_KEY` | Google Gemini API key | Yes | — |
+| `GROQ_API_KEY` | Groq API key | Yes | — |
 | `SECRET_KEY` | JWT signing secret | Yes | `interviewai-hackathon-2026-secret` |
 | `DATABASE_URL` | Database connection string | No | `sqlite:///./interviewai.db` |
 | `DEBUG` | Enable debug mode | No | `true` |
@@ -188,7 +188,7 @@ BASE_URL=http://localhost:8000 bash scripts/test-e2e.sh
 ## Known Limitations
 
 - Voice recognition requires Chrome/Edge (Web Speech API support)
-- Free Gemini API tier has rate limits (60 requests/minute)
+- Free Groq API tier has rate limits
 - SQLite for development (use PostgreSQL for production)
 - Speech recognition accuracy depends on microphone quality
 - Currently optimized for cybersecurity roles

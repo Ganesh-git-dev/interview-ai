@@ -358,7 +358,7 @@ Get PWNDORA lab recommendations. **Requires auth.**
 
 ## Rate Limiting
 
-Free Gemini API tier has rate limits. For production deployments, consider:
+Free Groq API tier has rate limits. For production deployments, consider:
 - Implementing request queuing
 - Adding a Redis cache for repeat queries
-- Upgrading to paid Gemini API tier
+- Upgrading to paid Groq API tier

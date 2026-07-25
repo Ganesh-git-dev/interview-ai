@@ -64,6 +64,12 @@ def get_report(
     else:
         recommendation = "Pass"
 
+    # Persist score and recommendation back to session
+    if session.overall_score is None:
+        session.overall_score = round(overall_avg * 100, 1)
+        session.recommendation = recommendation
+        db.commit()
+
     # Aggregate strengths and gaps
     all_strengths = []
     all_gaps = []

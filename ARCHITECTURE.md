@@ -8,7 +8,7 @@
 
 ## System Overview
 
-InterviewAI Pro follows a client-server architecture with clear separation of concerns. The frontend is a React SPA, the backend is a FastAPI REST API, and the AI layer uses Google Gemini API for all NLP tasks.
+InterviewAI Pro follows a client-server architecture with clear separation of concerns. The frontend is a React SPA, the backend is a FastAPI REST API, and the AI layer uses Groq API (OpenAI-compatible) for all NLP tasks.
 
 ---
 
@@ -57,13 +57,13 @@ InterviewAI Pro follows a client-server architecture with clear separation of co
 │  │  │                Service Layer                              │  │  │
 │  │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────────┐ │  │  │
 │  │  │  │ JD Parser    │ │ Question     │ │ Answer Evaluator │ │  │  │
-│  │  │  │ (Gemini)     │ │ Generator    │ │ (3 agents)       │ │  │  │
-│  │  │  └──────────────┘ │ (Gemini)     │ │ • Technical      │ │  │  │
+│  │  │  │ (Groq)       │ │ Generator    │ │ (3 agents)       │ │  │  │
+│  │  │  └──────────────┘ │ (Groq)       │ │ • Technical      │ │  │  │
 │  │  │  ┌──────────────┐ └──────────────┘ │ • Communication  │ │  │  │
 │  │  │  │ Analytics    │ ┌──────────────┐ │ • STAR Coach     │ │  │  │
 │  │  │  │ Engine       │ │ Report       │ └──────────────────┘ │  │  │
 │  │  │  │ (Statistical)│ │ Generator    │ ┌──────────────────┐ │  │  │
-│  │  │  └──────────────┘ │ (Gemini+PDF) │ │ Gemini Client   │ │  │  │
+│  │  │  └──────────────┘ │ (Groq+PDF)   │ │ Groq Client     │ │  │  │
 │  │  │                   └──────────────┘ │ (API wrapper)   │ │  │  │
 │  │  └─────────────────────────────────────┴──────────────────┘  │  │
 │  │                          │                                    │  │
@@ -80,10 +80,10 @@ InterviewAI Pro follows a client-server architecture with clear separation of co
 └───────────────────────────┼──────────────────────────────────────────┘
                             │
                     ┌───────┴────────┐
-                    │  Google Gemini │
-                    │  API (External)│
-                    │  2.5-flash     │
-                    │  2.5-pro       │
+                    │  Groq API      │
+                    │  (External)    │
+                    │  LLaMA 3.3     │
+                    │  70B Versatile │
                     └────────────────┘
 ```
 
@@ -113,12 +113,12 @@ InterviewAI Pro follows a client-server architecture with clear separation of co
 | **SQLAlchemy** | ORM | Database models (6 tables) |
 | **Pydantic** | Validation | Request/response schemas |
 | **JWT Auth** | python-jose + passlib | Secure token-based authentication |
-| **GeminiClient** | google-generativeai | Wrapper for Gemini API (fast + pro models) |
-| **JDParser** | Gemini + Prompts | Extract structured data from raw JD text |
-| **QuestionGenerator** | Gemini + Prompts | Generate 6-10 tailored interview questions |
-| **AnswerEvaluator** | Gemini (3 agents) | Multi-agent: technical + communication + STAR |
+| **GroqClient** | openai (Groq-compatible) | Wrapper for Groq API (LLaMA 3.3 70B) |
+| **JDParser** | Groq + Prompts | Extract structured data from raw JD text |
+| **QuestionGenerator** | Groq + Prompts | Generate 6-10 tailored interview questions |
+| **AnswerEvaluator** | Groq (3 agents) | Multi-agent: technical + communication + STAR |
 | **AnalyticsEngine** | Python logic | Confidence, keyword coverage, domain scores, role readiness |
-| **ReportGenerator** | ReportLab + Gemini | PDF report generation |
+| **ReportGenerator** | ReportLab + Groq | PDF report generation |
 
 ---
 
@@ -140,9 +140,9 @@ InterviewAI Pro follows a client-server architecture with clear separation of co
    ├→ Web Speech API captures voice → transcription
    ├→ POST /api/answer/submit
    │   └→ AnswerEvaluator runs 3 AI agents in parallel
-   │       ├→ Technical Evaluator (pro model)
-   │       ├→ Communication Coach (fast model)
-   │       └→ STAR Coach (fast model, behavioural only)
+   │       ├→ Technical Evaluator (llama-3.3-70b-versatile)
+   │       ├→ Communication Coach (llama-3.3-70b-versatile)
+   │       └→ STAR Coach (llama-3.3-70b-versatile, behavioural only)
    └→ Returns scores + strengths + gaps + feedback
 
 4. View Results
@@ -159,13 +159,13 @@ InterviewAI Pro follows a client-server architecture with clear separation of co
 ### AI Data Flow
 
 ```
-JD Text → Gemini 2.5-flash → Structured JSON (skills, certs, domains)
+JD Text → Groq (llama-3.3-70b-versatile) → Structured JSON (skills, certs, domains)
     ↓
-Structured JSON → Gemini 2.5-flash → 6-10 Questions
+Structured JSON → Groq (llama-3.3-70b-versatile) → 6-10 Questions
     ↓
-Question + Answer → Gemini 2.5-pro (Technical) → Scores + Feedback
-                  → Gemini 2.5-flash (Communication) → Scores + Feedback
-                  → Gemini 2.5-flash (STAR, behavioural only) → STAR Score
+Question + Answer → Groq (llama-3.3-70b-versatile, Technical) → Scores + Feedback
+                  → Groq (llama-3.3-70b-versatile, Communication) → Scores + Feedback
+                  → Groq (llama-3.3-70b-versatile, STAR, behavioural only) → STAR Score
     ↓
 Combined Evaluation → Analytics Engine → Charts + Recommendations
 ```
@@ -288,11 +288,11 @@ See [PWNDORA_INTEGRATION.md](docs/PWNDORA_INTEGRATION.md) for complete integrati
 
 ## Performance Considerations
 
-- **Gemini Models**: Fast (2.5-flash) for JD parsing, question gen, communication eval; Pro (2.5-pro) for technical eval
+- **Groq Models**: LLaMA 3.3 70B Versatile (llama-3.3-70b-versatile) for all NLP tasks — JD parsing, question generation, and evaluation
 - **Database**: SQLite with WAL mode for development; migrate to PostgreSQL for production
 - **Frontend**: Vite builds optimized for production (tree-shaking, code splitting)
-- **Caching**: Consider Redis for Gemini API response caching in production
-- **Rate Limiting**: Free Gemini API: 60 requests/minute; implement queue for production
+- **Caching**: Consider Redis for Groq API response caching in production
+- **Rate Limiting**: Free Groq API tier has rate limits; implement queue for production
 
 ---
 

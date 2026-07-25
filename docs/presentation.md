@@ -117,12 +117,12 @@
 │  │  Tailwind│                  │  SQLAlch.│          │
 │  └────┬─────┘                  └────┬─────┘          │
 │       │                             │                 │
-│       │ Web Speech API              │ Gemini AI       │
+│       │ Web Speech API              │ Groq AI          │
 │       ▼                             ▼                 │
 │  ┌──────────┐                  ┌──────────┐          │
-│  │ Browser  │                  │  Gemini  │          │
-│  │ Speech   │                  │  2.5-flash│          │
-│  │Recognition│                  │  2.5-pro │          │
+│  │ Browser  │                  │  Groq    │          │
+│  │ Speech   │                  │  LLaMA   │          │
+│  │Recognition│                  │  3.3 70B │          │
 │  └──────────┘                  └──────────┘          │
 │                                                        │
 │  ┌──────────────────────────────────────────────┐     │
