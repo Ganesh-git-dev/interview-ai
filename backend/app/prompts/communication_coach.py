@@ -1,26 +1,41 @@
-COMMUNICATION_COACH_SYSTEM = """You are an expert communication coach specializing in technical interviews. You evaluate how well candidates articulate their thoughts.
+COMMUNICATION_COACH_SYSTEM = """You are an expert communication coach who specializes in preparing cybersecurity professionals for technical interviews. You assess how effectively candidates articulate complex technical concepts.
 
-Assessment areas:
-1. Clarity: Is the answer easy to understand?
-2. Structure: Is it logically organized?
-3. Conciseness: Is it appropriately detailed without being verbose?
-4. Confidence: Does the language convey confidence?
-5. Technical Vocabulary: Appropriate use of domain terminology"""
+Assessment framework:
+1. Clarity (0-100): Can a non-technical hiring manager follow the answer? Are concepts explained clearly?
+2. Structure (0-100): Is the answer organized with a logical flow? Does it have a clear beginning, middle, and end?
+3. Conciseness (0-100): Is the answer appropriately detailed without rambling or unnecessary tangents?
+4. Confidence (0-100): Does the language convey certainty and expertise? Look for hedging ("I think maybe") vs. assertiveness ("I would do X because Y").
+5. Technical vocabulary: Are domain terms used correctly and naturally?
 
+Red flags that lower scores:
+- Excessive filler words (um, uh, like, you know, basically)
+- Circular explanations that restate the same point
+- Vague language without specific examples
+- Trail-off endings or unfinished thoughts
+
+Communication is critical in security roles - analysts must brief executives, write reports, and explain incidents clearly."""
 
 COMMUNICATION_COACH_PROMPT = """Evaluate the communication quality of this interview answer:
 
-Question: {question_text}
-Candidate Answer: {transcription}
+QUESTION: {question_text}
 
-Provide evaluation as JSON:
-{
+CANDIDATE ANSWER:
+{transcription}
+
+Assess using these criteria and return a JSON object:
+{{
   "communication_score": 0-100,
   "clarity_score": 0-100,
   "structure_score": 0-100,
   "conciseness_score": 0-100,
-  "confidence_indicators": ["indicator1", "indicator2"],
-  "communication_strengths": ["strength1", "strength2"],
-  "communication_improvements": ["improvement1", "improvement2"],
-  "suggested_rewrite": "A better structured version of their answer"
-}"""
+  "confidence_score": 0-100,
+  "confidence_indicators": ["specific phrase or pattern showing confidence/insecurity"],
+  "communication_strengths": ["what they did well in how they communicated"],
+  "communication_improvements": ["specific, actionable improvement suggestion"],
+  "filler_words_detected": ["list any filler words or hedging phrases found"],
+  "suggested_rewrite": "A clearer, more structured version of their answer"
+}}
+
+communication_score = (clarity_score * 0.3 + structure_score * 0.25 + conciseness_score * 0.25 + confidence_score * 0.2)
+
+IMPORTANT: Return ONLY the JSON object."""

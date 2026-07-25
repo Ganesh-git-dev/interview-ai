@@ -7,13 +7,18 @@ class JDParserService:
     """Service for parsing job descriptions using Gemini AI."""
 
     async def parse(self, jd_text: str) -> JDParsedResponse:
-        """Parse a job description and extract structured data."""
-        prompt = JD_ANALYZER_PROMPT.format(jd_text=jd_text)
+        if not jd_text or not jd_text.strip():
+            raise ValueError("Job description text cannot be empty")
+
+        prompt = JD_ANALYZER_PROMPT.format(jd_text=jd_text.strip())
 
         result = await fast_client.generate_json(
             prompt=prompt,
-            system_instruction=JD_ANALYZER_SYSTEM
+            system_instruction=JD_ANALYZER_SYSTEM,
         )
+
+        if isinstance(result, list):
+            result = result[0] if result else {}
 
         return JDParsedResponse(
             role_title=result.get("role_title", "Cybersecurity Professional"),
@@ -22,5 +27,5 @@ class JDParserService:
             preferred_certifications=result.get("preferred_certifications", []),
             domain_focus=result.get("domain_focus", []),
             responsibilities=result.get("responsibilities", []),
-            experience_years=result.get("experience_years")
+            experience_years=result.get("experience_years"),
         )

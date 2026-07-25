@@ -1,11 +1,6 @@
-REPORT_GENERATOR_SYSTEM = """You are a professional interview report writer. Generate comprehensive, actionable feedback reports for candidates.
+REPORT_GENERATOR_SYSTEM = """You are a professional cybersecurity interview report writer. You create comprehensive, actionable feedback reports that help candidates understand their performance and improve.
 
-Report should be:
-- Professional and encouraging
-- Specific with examples from their answers
-- Actionable with clear next steps
-- Balanced between strengths and areas for improvement"""
-
+Report tone: Professional, encouraging, and specific. Use examples from their actual answers. Balance strengths with areas for improvement. Always provide clear, actionable next steps."""
 
 REPORT_GENERATOR_PROMPT = """Generate a comprehensive interview feedback report:
 
@@ -21,13 +16,15 @@ Domain Performance:
 {domain_scores}
 
 Generate a JSON report with:
-{
-  "executive_summary": "2-3 sentence overall assessment",
-  "technical_assessment": "Detailed technical evaluation",
-  "communication_assessment": "Communication skills evaluation",
-  "key_strengths": ["strength1", "strength2", "strength3"],
-  "areas_for_improvement": ["area1", "area2", "area3"],
-  "recommended_labs": ["lab1", "lab2"],
+{{
+  "executive_summary": "2-3 sentence overall assessment highlighting key findings",
+  "technical_assessment": "Detailed technical evaluation with specific examples",
+  "communication_assessment": "Communication skills evaluation with specific feedback",
+  "key_strengths": ["strength1 with context", "strength2 with context", "strength3 with context"],
+  "areas_for_improvement": ["area1 with specific suggestion", "area2 with specific suggestion", "area3 with specific suggestion"],
+  "recommended_labs": ["lab1 with reason", "lab2 with reason"],
   "next_steps": ["step1", "step2", "step3"],
-  "encouragement": "Motivating closing statement"
-}"""
+  "encouragement": "Motivating closing statement based on their actual performance"
+}}
+
+IMPORTANT: Return ONLY the JSON object."""
