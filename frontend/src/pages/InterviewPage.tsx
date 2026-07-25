@@ -37,9 +37,9 @@ export default function InterviewPage() {
     error: speechError,
   } = useSpeechRecognition({
     onEnd: () => {
-      if (phaseRef.current === 'user-speaking') {
-        // Speech recognition auto-stopped (e.g. silence)
-        handleDoneSpeaking();
+      // Auto-submit when speech recognition stops (silence or mic toggle)
+      if (phaseRef.current === 'user-speaking' && transcription.trim()) {
+        submitAnswer();
       }
     },
   });
@@ -75,7 +75,7 @@ export default function InterviewPage() {
     setPhase('ai-speaking');
     phaseRef.current = 'ai-speaking';
     await speak(question.question_text);
-    startRecording();
+    // After AI finishes speaking, wait for user to click mic
     setPhase('user-speaking');
     phaseRef.current = 'user-speaking';
   };
@@ -89,7 +89,7 @@ export default function InterviewPage() {
     }
   }, [questions, loading]);
 
-  const handleDoneSpeaking = async () => {
+  const submitAnswer = async () => {
     if (phaseRef.current !== 'user-speaking') return;
     stopRecording();
 
@@ -109,7 +109,6 @@ export default function InterviewPage() {
       setPhase('ai-feedback');
       phaseRef.current = 'ai-feedback';
 
-      // Speak brief feedback
       const score = response.data.overall_score;
       const summary = `You scored ${score} out of 100.`;
       await speak(summary);
@@ -122,6 +121,16 @@ export default function InterviewPage() {
     }
   };
 
+  const handleToggleMic = () => {
+    if (isRecording) {
+      // Clicking mic while recording → stop and submit
+      stopRecording();
+      // onEnd callback will handle submission
+    } else if (phase === 'user-speaking') {
+      startRecording();
+    }
+  };
+
   const handleNext = async () => {
     setFeedback(null);
     resetTranscription();
@@ -131,7 +140,6 @@ export default function InterviewPage() {
       setCurrentIndex(nextIndex);
       setTimer(0);
       setTimerActive(true);
-      // Speak next question
       await speakQuestion(questions[nextIndex]);
     } else {
       navigate(`/results/${sessionId}`);
@@ -216,18 +224,7 @@ export default function InterviewPage() {
                   interimTranscript={interimTranscript}
                   isAISpeaking={isAISpeaking && phase === 'ai-speaking'}
                   isEvaluating={isSubmitting}
-                  onToggleRecording={() => {
-                    if (isRecording) {
-                      stopRecording();
-                      setPhase('user-speaking');
-                      phaseRef.current = 'user-speaking';
-                    } else {
-                      startRecording();
-                      setPhase('user-speaking');
-                      phaseRef.current = 'user-speaking';
-                    }
-                  }}
-                  onDone={handleDoneSpeaking}
+                  onToggleRecording={handleToggleMic}
                 />
 
                 {speechError && (
@@ -236,7 +233,7 @@ export default function InterviewPage() {
 
                 {!isSupported && (
                   <p className="mt-2 text-amber-400 text-sm">
-                    Speech recognition not available in this browser. Type your answer instead.
+                    Speech recognition not available in this browser.
                   </p>
                 )}
               </div>

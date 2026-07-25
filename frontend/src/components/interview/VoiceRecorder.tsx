@@ -9,7 +9,6 @@ interface VoiceRecorderProps {
   isAISpeaking: boolean;
   isEvaluating: boolean;
   onToggleRecording: () => void;
-  onDone: () => void;
 }
 
 export default function VoiceRecorder({
@@ -19,10 +18,7 @@ export default function VoiceRecorder({
   isAISpeaking,
   isEvaluating,
   onToggleRecording,
-  onDone,
 }: VoiceRecorderProps) {
-  const showMic = !isAISpeaking && !isEvaluating;
-
   return (
     <div className="space-y-3">
       {/* Live Captions */}
@@ -30,45 +26,22 @@ export default function VoiceRecorder({
         <LiveCaptions finalTranscript={transcription} interimTranscript={interimTranscript} />
       )}
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-3">
-        {showMic && (
-          <button
-            onClick={onToggleRecording}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition ${
-              isRecording
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-gray-700 hover:bg-gray-600 text-white'
-            }`}
-          >
-            {isRecording ? (
-              <>
-                <MicOff className="w-5 h-5" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-5 h-5" />
-                Start Speaking
-              </>
-            )}
-          </button>
-        )}
-
-        {isRecording && (
-          <button
-            onClick={onDone}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-blue-600 hover:bg-blue-700 text-white transition"
-          >
-            Done Speaking
-          </button>
-        )}
-
-        {isAISpeaking && (
+      {/* Mic Toggle */}
+      <div className="flex items-center justify-center">
+        {isEvaluating ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600/20 text-purple-300"
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-yellow-600/20 text-yellow-300"
+          >
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Evaluating...
+          </motion.div>
+        ) : isAISpeaking ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-purple-600/20 text-purple-300"
           >
             <motion.div
               className="flex gap-1"
@@ -82,30 +55,30 @@ export default function VoiceRecorder({
             </motion.div>
             AI is speaking...
           </motion.div>
-        )}
-
-        {isEvaluating && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-yellow-600/20 text-yellow-300"
+        ) : (
+          <button
+            onClick={onToggleRecording}
+            className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+              isRecording
+                ? 'bg-red-600 shadow-lg shadow-red-600/30'
+                : 'bg-gray-700 hover:bg-gray-600'
+            }`}
           >
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Evaluating...
-          </motion.div>
+            {isRecording ? (
+              <MicOff className="w-6 h-6 text-white" />
+            ) : (
+              <Mic className="w-6 h-6 text-white" />
+            )}
+            {isRecording && (
+              <motion.span
+                className="absolute inset-0 rounded-full border-2 border-red-500"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+            )}
+          </button>
         )}
       </div>
-
-      {/* Recording pulse */}
-      {isRecording && (
-        <div className="flex justify-center">
-          <motion.div
-            className="w-2 h-2 bg-red-500 rounded-full"
-            animate={{ opacity: [1, 0.3, 1], scale: [1, 1.2, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-        </div>
-      )}
     </div>
   );
 }
