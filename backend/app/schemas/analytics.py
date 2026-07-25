@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from app.schemas.answer import AnswerFeedback
 
@@ -11,8 +11,7 @@ class AnalyticsResponse(BaseModel):
     domain_scores: dict
     role_readiness: dict
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ConfidenceResponse(BaseModel):
@@ -21,11 +20,11 @@ class ConfidenceResponse(BaseModel):
 
 
 class KeywordCoverageResponse(BaseModel):
-    required_skills: list[dict]  # [{skill: str, covered: bool}]
+    required_skills: list[dict]
 
 
 class RoleReadinessResponse(BaseModel):
-    roles: list[dict]  # [{role: str, percentage: float, status: str}]
+    roles: list[dict]
 
 
 class RecommendationResponse(BaseModel):
@@ -35,8 +34,7 @@ class RecommendationResponse(BaseModel):
     reason: str
     estimated_hours: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ReportResponse(BaseModel):
