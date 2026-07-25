@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from app.core.config import get_settings
 from app.core.database import engine, Base
 from app.api import auth, jd, session, answer, analytics, report
@@ -40,6 +41,12 @@ def health_check():
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION
     }
+
+
+@app.get("/api/sessions")
+async def sessions_alias(request: Request):
+    """Alias for /api/session/list — frontend calls /api/sessions (plural)."""
+    return RedirectResponse(url="/api/session/list" + ("?" + request.url.query if request.url.query else ""))
 
 
 if __name__ == "__main__":

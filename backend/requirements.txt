@@ -17,8 +17,8 @@ pydantic>=2.10.0,<3.0.0
 pydantic-settings>=2.1.0,<3.0.0
 email-validator>=2.1.0,<3.0.0
 
-# Google Gemini
-google-genai>=1.0.0
+# Groq API (OpenAI-compatible)
+openai>=1.0.0
 
 # PDF Generation
 reportlab>=4.1.0
