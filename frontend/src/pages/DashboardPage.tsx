@@ -1,134 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, History, LogOut } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
+import { History, Shield } from 'lucide-react';
 import { useInterviewStore } from '../stores/interviewStore';
+import Header from '../components/shared/Header';
+import JDInput from '../components/dashboard/JDInput';
+import QuickStart from '../components/dashboard/QuickStart';
+import SessionCard from '../components/dashboard/SessionCard';
+import api from '../services/api';
 
-export default function DashboardPage() {
-  const [jdText, setJdText] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { user, logout } = useAuthStore();
-  const createSession = useInterviewStore((s) => s.createSession);
-  const startInterview = useInterviewStore((s) => s.startInterview);
-  const navigate = useNavigate();
-
-  const handleStartInterview = async () => {
-    if (!jdText.trim()) {
-      setError('Please paste a job description');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const sessionId = await createSession(jdText);
-      await startInterview(sessionId);
-      navigate(`/interview/${sessionId}`);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create session');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">InterviewAI Pro</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">{user?.email}</span>
-            <button
-              onClick={logout}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-6 py-8">
-        {/* New Interview Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg p-8 mb-8"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <Plus className="w-5 h-5 text-blue-600" />
-            </div>
-            <h2 className="text-xl font-semibold">Start New Interview</h2>
-          </div>
-
-          <p className="text-gray-600 mb-4">
-            Paste a cybersecurity job description and we'll generate tailored interview questions.
-          </p>
-
-          {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
-              {error}
-            </div>
-          )}
-
-          <textarea
-            value={jdText}
-            onChange={(e) => setJdText(e.target.value)}
-            placeholder="Paste the job description here...
-
-Example:
-We are looking for a SOC Analyst with experience in:
-- SIEM tools (Splunk, Sentinel)
-- Log analysis and alert triage
-- Incident response procedures
-- MITRE ATT&CK framework
-- Sigma rules and detection engineering
-
-Requirements:
-- 2+ years experience in SOC environment
-- CEH or similar certification preferred
-- Strong analytical and communication skills"
-            className="w-full h-48 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-          />
-
-          <button
-            onClick={handleStartInterview}
-            disabled={loading || !jdText.trim()}
-            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Analyzing JD...
-              </span>
-            ) : (
-              'Start Interview'
-            )}
-          </button>
-        </motion.div>
-
-        {/* Quick Start */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-8 text-white"
-        >
-          <h3 className="text-lg font-semibold mb-2">Quick Start</h3>
-          <p className="text-blue-100 mb-4">
-            Don't have a JD? Try our sample SOC Analyst position.
-          </p>
-          <button
-            onClick={() => {
-              setJdText(`SOC Analyst - Security Operations Center
+const sampleJD = `SOC Analyst - Security Operations Center
 
 Company: CyberShield Solutions
 Location: Remote
@@ -159,14 +40,154 @@ Preferred Certifications:
 Experience:
 - 1-3 years in SOC or security operations role
 - Hands-on experience with log analysis and alert triage
-- Strong analytical and problem-solving skills`);
-            }}
-            className="px-4 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition"
-          >
-            Use Sample JD
-          </button>
-        </motion.div>
+- Strong analytical and problem-solving skills`;
+
+interface Session {
+  id: number;
+  role_title?: string;
+  score?: number;
+  date: string;
+  status: string;
+}
+
+export default function DashboardPage() {
+  const [jdText, setJdText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const createSession = useInterviewStore((s) => s.createSession);
+  const startInterview = useInterviewStore((s) => s.startInterview);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    try {
+      const response = await api.get('/api/sessions');
+      setSessions(response.data || []);
+    } catch {
+      // Sessions endpoint may not exist yet
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const handleStartInterview = async () => {
+    if (!jdText.trim()) {
+      setError('Please paste a job description');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const sessionId = await createSession(jdText);
+      await startInterview(sessionId);
+      navigate(`/interview/${sessionId}`);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewSession = (id: number) => {
+    navigate(`/results/${id}`);
+  };
+
+  const handleUseSample = () => {
+    setJdText(sampleJD);
+    setError('');
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-gray-50"
+    >
+      <Header />
+
+      <main className="container mx-auto px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <JDInput onSubmit={handleStartInterview} loading={loading} error={error} />
+
+            <QuickStart onUseSample={handleUseSample} />
+          </div>
+
+          <div className="space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                  <History className="w-5 h-5 text-amber-600" />
+                </div>
+                <h2 className="text-lg font-semibold">Recent Sessions</h2>
+              </div>
+
+              {sessionsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : sessions.length > 0 ? (
+                <div className="space-y-3">
+                  {sessions.map((session, i) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      onView={handleViewSession}
+                      index={i}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No sessions yet</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Complete an interview to see your history
+                  </p>
+                </div>
+              )}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-6 text-white"
+            >
+              <h3 className="font-semibold mb-2">Practice Tips</h3>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  Speak clearly and at a moderate pace
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  Use the STAR method for behavioural questions
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  Include specific tools and techniques
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
       </main>
-    </div>
+    </motion.div>
   );
 }

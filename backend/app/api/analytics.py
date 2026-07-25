@@ -39,7 +39,7 @@ def get_analytics(
         engine = AnalyticsEngineService()
         analytics = engine.generate(session_id=session_id, db=db)
 
-    return AnalyticsResponse.from_orm(analytics)
+    return AnalyticsResponse.model_validate(analytics)
 
 
 @router.get("/{session_id}/confidence", response_model=ConfidenceResponse)
